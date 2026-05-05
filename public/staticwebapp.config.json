@@ -1,6 +1,10 @@
 {
   "routes": [
     {
+      "route": "/",
+      "redirect": "/login"
+    },
+    {
       "route": "/login",
       "redirect": "/.auth/login/aad"
     },
@@ -10,3 +14,4 @@
     }
   ]
 }
+``
