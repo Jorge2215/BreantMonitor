@@ -1,0 +1,50 @@
+name: Actualizar Dated Brent
+
+on:
+  workflow_dispatch:
+    inputs:
+      fecha:
+        description: 'Fecha (YYYY-MM-DD) — dejar vacío para usar hoy'
+        required: false
+        default: ''
+      db:
+        description: 'Dated Brent — precio (USD/bbl)'
+        required: true
+      modo:
+        description: 'Modo — "nuevo" agrega fila nueva, "actualizar" modifica el último día'
+        required: true
+        default: 'nuevo'
+        type: choice
+        options:
+          - nuevo
+          - actualizar
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Actualizar Dated Brent en index.html
+        run: |
+          python3 .github/scripts/update_dated_brent.py \
+            --fecha "${{ github.event.inputs.fecha }}" \
+            --db    "${{ github.event.inputs.db }}" \
+            --modo  "${{ github.event.inputs.modo }}"
+
+      - name: Commit y push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/index.html
+          git diff --cached --quiet || git commit -m "data: Dated Brent ${{ github.event.inputs.fecha || 'hoy' }} — DB=${{ github.event.inputs.db }}"
+          git push
