@@ -1,12 +1,8 @@
 {
   "routes": [
     {
-      "route": "/",
-      "redirect": "/login"
-    },    
-    {
       "route": "/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous"]
     }
   ]
 }
