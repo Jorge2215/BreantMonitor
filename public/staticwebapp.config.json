@@ -1,11 +1,6 @@
 {
   "routes": [
     {
-      "route": "/",
-      "redirect": "/login",
-      "statusCode": 302
-    },
-    {
       "route": "/login",
       "allowedRoles": ["anonymous"]
     },
