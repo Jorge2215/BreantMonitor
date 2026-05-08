@@ -1,6 +1,11 @@
 {
   "routes": [
     {
+      "route": "/",
+      "rewrite": "/login",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/login",
       "allowedRoles": ["anonymous"]
     },
