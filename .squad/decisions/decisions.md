@@ -149,3 +149,15 @@ The Chart.js CDN `<script>` in `<head>` is unchanged.
 - Data paths `Data/raw.json` and `Data/dated-brent.json` are unchanged.
 - Bootstrap IIFE remains at the bottom of `script.js`.
 - No visual behaviour, chart logic, or data transformation was modified.
+
+---
+
+## From inbox: nico-readme-doc.md
+
+README created: technical documentation for BreantMonitor (2026-05-09)
+
+- File: README.md at repo root
+- Purpose: Provide complete developer-oriented reference for features, data formats, local dev and Azure deployment.
+- Created by: Nico (Frontend)
+
+
