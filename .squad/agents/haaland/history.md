@@ -23,3 +23,19 @@
 
 ### 2026-05-09 — Proposal promoted
 - Proposal file `.squad/decisions/inbox/haaland-deployment-arch.md` promoted to `.squad/decisions/decisions.md` by Scribe on 2026-05-09.
+
+### 2026-05-09 — GitHub Actions CI/CD Workflow Created
+
+- **File created:** `.github/workflows/azure-static-web-apps.yml`
+- **Action used:** `Azure/static-web-apps-deploy@v1`
+- **Trigger:** `push` to `main` (production deploy) + `pull_request` targeting `main` (preview + cleanup)
+- **Key config:** `skip_app_build: true`, `app_location: "."`, `output_location: "."` — pure static site, no build step
+- **Two-job structure:** `build_and_deploy` (active PRs + main push) and `close_pull_request` (PR closed cleanup)
+- **Auth:** `AZURE_STATIC_WEB_APPS_API_TOKEN` GitHub Actions secret (must be set by Jorge from Azure Portal)
+- **Decision inbox:** `.squad/decisions/inbox/haaland-cicd-workflow.md`
+- **Existing workflows noted (not modified):** `squad-heartbeat.yml`, `squad-issue-assign.yml`, `squad-triage.yml`, `sync-squad-labels.yml`
+
+### 2026-05-09 — Scribe promotion of CI/CD workflow
+- Scribe merged .squad/decisions/inbox/haaland-cicd-workflow.md into .squad/decisions/decisions.md and removed the inbox file.
+- Created .github/workflows/azure-static-web-apps.yml and logged orchestration/session files.
+

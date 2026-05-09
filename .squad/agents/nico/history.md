@@ -32,3 +32,4 @@
 ### 2026-05-09 — Decisions inbox merged
 - Scribe merged three inbox proposals (haaland-deployment-arch.md, nico-css-extraction.md, nico-js-extraction.md) into `.squad/decisions/decisions.md` and removed the inbox files.
 - Session log and orchestration log created for JS externalization.
+- README.md created with full technical documentation (2026-05-09)

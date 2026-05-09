@@ -1,0 +1,78 @@
+# Azure Static Web App — Continuous Deployment
+#
+# Deploys the Brent Spread Monitor to Azure Static Web Apps on every push to main.
+# Also handles PR preview environments: creates one on PR open/sync, tears it down on PR close.
+#
+# Static Web App: brent-spread-monitor-swa
+# Resource group: brent-spread-monitor-rg
+# Subscription:   bb5ffe61-553c-4019-a657-79878bed7e08
+# Repo:           Jorge2215/BreantMonitor
+
+name: Azure Static Web Apps CI/CD
+
+on:
+  # Deploy to production on every push/merge to main
+  push:
+    branches:
+      - main
+
+  # Create a PR preview environment on open/sync/reopen; tear it down on close
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - main
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Build & Deploy  (runs on push to main OR open/active PRs)
+  # ──────────────────────────────────────────────
+  build_and_deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    # Skip this job when a PR is being closed (cleanup job handles that)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true   # required by the SWA action even for pure static sites
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          # Secret stored in GitHub → Settings → Secrets and variables → Actions
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+
+          # Deployment action
+          action: upload
+
+          # App source — repo root contains Index.html, styles.css, script.js, Data/*.json
+          app_location: "."
+
+          # Output location — no build step; files are served directly from app_location
+          output_location: "."
+
+          # CRITICAL: this is a pure static site with no package.json and no build tool.
+          # Telling the SWA CLI to skip the build avoids it trying (and failing) to run npm.
+          skip_app_build: true
+
+  # ──────────────────────────────────────────────
+  # Cleanup  (runs only when a PR is closed)
+  # ──────────────────────────────────────────────
+  close_pull_request:
+    name: Close Pull Request Environment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+
+    steps:
+      - name: Remove PR staging environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
+          app_location: "."
