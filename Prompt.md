@@ -4,7 +4,7 @@ I created a JSON file with name "raw.json" on folder \Data. The file contains th
 The goal for our team is update the page "Index.html", eliminating the hardcoded values and adding logic (java script) to read the values from the JSON file.
 Once this page update is done, we gonna publish the html page and the json file on an Azure Static Web App.
 
-Version Polenta 1
+##Version Inicial
 Context:
 You are assisting in refactoring an HTML page ("Index.html") that currently displays Brent Oil Price information. 
 The values are hardcoded directly into the page, contained within cards labeled CO1 to CO10. 
@@ -26,7 +26,8 @@ Output:
 Provide the updated HTML and JavaScript code. 
 Include comments explaining the changes and how the JSON integration works.
 
-Separacion de estilo de la pagina INDEX
+
+##Separacion de estilo de la pagina INDEX
 
 Context:
 You are assisting in refactoring an HTML page ("Index.html") that currently contains a large inline <style> section 
@@ -48,9 +49,30 @@ Output:
 Provide the updated "Index.html" with the external stylesheet reference, 
 and the simplified "styles.css" file with consolidated rules and comments explaining the changes.
 
+##Separacion de codigo JScript
+Context:
+You are assisting in refactoring an HTML page ("Index.html") that currently contains inline JavaScript code 
+embedded within <script> tags. The logic handles dynamic data loading and rendering.
+
+Goal:
+Move all JavaScript code from "Index.html" into an external file named "script.js" 
+to improve maintainability, readability, and performance. While doing this, evaluate opportunities 
+to simplify the JavaScript logic by consolidating repeated functions and using loops for dynamic content generation.
+
+Instructions:
+- Extract all JavaScript from "Index.html" and place it into "script.js".
+- Update "Index.html" to reference the external file using <script src="script.js"></script>.
+- Ensure that relative paths (e.g., ./Data/raw.json) remain correct.
+- Simplify redundant code by consolidating functions and using reusable logic.
+- Keep the visual layout and functionality unchanged after refactoring.
+
+Output:
+Provide the updated "Index.html" with the external script reference, 
+and the new "script.js" file with simplified, modular JavaScript code and comments explaining the changes.
 
 
-
+##Resume Session
 copilot --resume=f4de3bca-3e56-48d2-8b72-4aed69d355b2
 
+##Probar la web localmente
 Probar la web con npx serve

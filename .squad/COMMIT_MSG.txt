@@ -1,0 +1,7 @@
+Scribe: merge inbox and logs
+
+- Merged .squad/decisions/inbox into .squad/decisions/decisions.md
+- Created orchestration log and session log for JS externalization
+- Updated agent history files
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
