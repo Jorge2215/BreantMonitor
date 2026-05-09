@@ -1,0 +1,52 @@
+{
+  "agents": {
+    "nico": {
+      "legacy_named": false,
+      "persistent_name": "Nico",
+      "universe": "Manchester City FC",
+      "role": "Frontend Dev",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    },
+    "rodri": {
+      "legacy_named": false,
+      "persistent_name": "Rodri",
+      "universe": "Manchester City FC",
+      "role": "Data/Finance",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    },
+    "foden": {
+      "legacy_named": false,
+      "persistent_name": "Foden",
+      "universe": "Manchester City FC",
+      "role": "Tester",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    },
+    "scribe": {
+      "legacy_named": false,
+      "persistent_name": "Scribe",
+      "universe": "reserved",
+      "role": "Session Logger",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    },
+    "haaland": {
+      "legacy_named": false,
+      "persistent_name": "Haaland",
+      "universe": "Manchester City FC",
+      "role": "Lead",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    },
+    "ralph": {
+      "legacy_named": false,
+      "persistent_name": "Ralph",
+      "universe": "reserved",
+      "role": "Work Monitor",
+      "created_at": "2026-05-09T11:07:58Z",
+      "status": "active"
+    }
+  }
+}

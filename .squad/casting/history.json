@@ -1,0 +1,28 @@
+{
+  "assignments": [
+    {
+      "requested_by": "Jorge",
+      "universe": "Manchester City FC",
+      "agents": [
+        {
+          "role": "Lead",
+          "name": "Haaland"
+        },
+        {
+          "role": "Frontend Dev",
+          "name": "Nico"
+        },
+        {
+          "role": "Data/Finance",
+          "name": "Rodri"
+        },
+        {
+          "role": "Tester",
+          "name": "Foden"
+        }
+      ],
+      "created_at": "2026-05-09T11:07:58Z",
+      "assignment_id": "2026-05-09-manchester-city"
+    }
+  ]
+}
