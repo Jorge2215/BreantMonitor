@@ -104,6 +104,6 @@ To refresh application data, replace the JSON files in the Data folder:
 
 The app reads the JSON files at load time. For local testing, reloading the page will fetch the latest files. For production, deploy updated JSON files with your static site update (push to the branch configured in Azure Static Web Apps or upload to the deployment artifact).
 
-----
+-----
 
 If you need a CSV/ETL guideline or a small script to transform source CSVs into the expected JSON layout, open an issue or ask and I will add a small converter script to the repo.
