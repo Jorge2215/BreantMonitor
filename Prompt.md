@@ -70,6 +70,42 @@ Output:
 Provide the updated "Index.html" with the external script reference, 
 and the new "script.js" file with simplified, modular JavaScript code and comments explaining the changes.
 
+##Deploy a Azure
+Resource Group: brent-spread-monitor-rg
+Static Web App: brent-spread-monitor-swa
+Subscription ID: bb5ffe61-553c-4019-a657-79878bed7e08
+Github Org: Jorge2215
+Github Repo: https://github.com/Jorge2215/BreantMonitor
+Rama: main
+Action: ejecutar el deploy cada vez que se ejecute un pull request and merge en la rama "main"
+
+Context:
+We need to configure continuous deployment for an Azure Static Web App named "brent-spread-monitor-swa" 
+located in the resource group "brent-spread-monitor-rg" under subscription ID "bb5ffe61-553c-4019-a657-79878bed7e08". 
+The project repository is hosted on GitHub under the organization "Jorge2215" and the repository 
+"https://github.com/Jorge2215/BreantMonitor". The deployment must be triggered automatically 
+whenever a pull request is merged into the "main" branch.
+
+Goal:
+Create a GitHub Actions workflow file that builds and deploys the Static Web App to Azure 
+using the Deployment Token. The workflow should ensure that the app is compiled correctly 
+and published to the designated Azure Static Web App resource.
+
+Instructions:
+- Create a workflow YAML file under .github/workflows/ (e.g., azure-static-web-apps.yml).
+- Configure the workflow to trigger only when a pull request is merged into the "main" branch.
+- Use the official Azure/static-web-apps-deploy@v1 action.
+- Reference the GitHub secret AZURE_STATIC_WEB_APPS_API_TOKEN for authentication.
+- Set app_location to the root folder (".") and output_location to the build output folder (e.g., "dist").
+- Ensure the workflow validates pull requests before merge and deploys only after merge.
+- Keep the workflow minimal, clean, and easy to maintain.
+
+Output:
+Provide the complete GitHub Actions workflow YAML file, 
+ready to be placed in the .github/workflows/ directory of the repository.
+Include comments explaining each section of the workflow.
+
+
 
 ##Resume Session
 copilot --resume=f4de3bca-3e56-48d2-8b72-4aed69d355b2
