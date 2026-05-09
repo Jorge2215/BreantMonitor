@@ -161,3 +161,95 @@ README created: technical documentation for BreantMonitor (2026-05-09)
 - Created by: Nico (Frontend)
 
 
+
+---
+
+## From inbox: haaland-cicd-workflow.md
+
+# Decision: GitHub Actions CI/CD Workflow — Azure Static Web App
+
+**Author:** Haaland (Lead)
+**Date:** 2026-05-09
+**Status:** IMPLEMENTED — file committed to `.github/workflows/azure-static-web-apps.yml`
+
+---
+
+## Summary
+
+A GitHub Actions workflow was created to continuously deploy the Brent Spread Monitor
+(`brent-spread-monitor-swa`) to Azure Static Web Apps on every push to `main`.
+
+---
+
+## Deployment Architecture
+
+| Setting | Value |
+|---|---|
+| Azure SWA name | `brent-spread-monitor-swa` |
+| Resource group | `brent-spread-monitor-rg` |
+| Subscription | `bb5ffe61-553c-4019-a657-79878bed7e08` |
+| GitHub Action | `Azure/static-web-apps-deploy@v1` |
+| Auth secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` (GitHub Actions secret) |
+| `app_location` | `.` (repo root) |
+| `output_location` | `.` (same as app_location — no dist folder) |
+| `skip_app_build` | `true` |
+
+---
+
+## Trigger Design
+
+| Event | Behaviour |
+|---|---|
+| `push` to `main` | Full production deploy |
+| `pull_request` → `opened / synchronize / reopened` | PR preview environment created |
+| `pull_request` → `closed` | PR preview environment torn down (via `action: close`) |
+
+PRs targeting `main` get a temporary staging URL from Azure SWA.
+On merge or close, the `close_pull_request` job runs the `close` action to delete the staging slot.
+
+---
+
+## Key Decisions
+
+### 1. `skip_app_build: true` is mandatory
+
+This is a pure static site — no `package.json`, no npm, no webpack.
+Without `skip_app_build: true`, the SWA Oryx builder would scan for a build system,
+find nothing it understands, and either fail or produce an empty deploy.
+
+### 2. `output_location: "."` — no dist folder
+
+Files (`Index.html`, `styles.css`, `script.js`, `Data/*.json`) are served as-is
+from the repo root. There is no compilation step that produces a separate output directory.
+
+### 3. Two-job structure
+
+- `build_and_deploy`: conditional on non-closed PRs and all main pushes
+- `close_pull_request`: conditional on PR closed event only
+
+This avoids the anti-pattern of a single job with branching shell logic and keeps each
+job's intent unambiguous.
+
+### 4. No environment variables or matrix needed
+
+Single-environment deploy. All configuration lives in `staticwebapp.config.json`
+(already committed at repo root) and the workflow file itself.
+
+---
+
+## Files Affected
+
+- `.github/workflows/azure-static-web-apps.yml` — **created**
+- `staticwebapp.config.json` — pre-existing (created in prior session)
+- `.squad/agents/haaland/history.md` — updated with this session's work
+
+---
+
+## Prerequisite
+
+Jorge must ensure `AZURE_STATIC_WEB_APPS_API_TOKEN` is set in:
+`GitHub → Jorge2215/BreantMonitor → Settings → Secrets and variables → Actions`
+
+The token is obtained from the Azure Portal under the Static Web App resource
+(Manage deployment token / Deployment token).
+
