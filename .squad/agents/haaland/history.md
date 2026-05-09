@@ -20,3 +20,6 @@
 - **Key risk identified:** Data staleness. JSON files are static in the repo. When Brent data updates, Jorge must commit new JSON and push to `main` to trigger a redeploy.
 - **Plan document:** `.squad/agents/haaland/deployment-plan.md`
 - **Decision proposals:** `.squad/decisions/inbox/haaland-deployment-arch.md` (3 decisions: CI/CD method, config file, no build step)
+
+### 2026-05-09 — Proposal promoted
+- Proposal file `.squad/decisions/inbox/haaland-deployment-arch.md` promoted to `.squad/decisions/decisions.md` by Scribe on 2026-05-09.

@@ -14,3 +14,6 @@ Agent Scribe initialized and ready for work.
 ## Learnings
 
 Initial setup complete.
+
+### 2026-05-09 — Decisions merged
+- Merged 3 inbox files into `.squad/decisions/decisions.md` and created orchestration and session logs for JS externalization.

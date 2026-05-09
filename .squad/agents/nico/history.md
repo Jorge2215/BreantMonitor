@@ -18,3 +18,17 @@
   - Moved `@keyframes spin` (loading spinner) from its isolated second `<style>` tag into `styles.css` under a "LOADING SPINNER ANIMATION" section.
   - No visual rules were altered — pixel-perfect parity with the original is preserved.
   - `[data-theme="light"]` overrides kept immediately after `:root` tokens, consistent with the original ordering.
+
+### 2026-05-09 — JS extraction to script.js
+- **JS externalization completed:** All 663 lines of inline JavaScript extracted from `Index.html` (lines 306–970) into new `script.js` at repo root. `Index.html` now has `<script src="script.js"></script>` before `</body>` and zero inline `<script>` blocks (only the Chart.js CDN tag in `<head>` remains).
+- **Simplifications applied:**
+  - `isLight()` — module-level helper replacing every `document.documentElement.getAttribute('data-theme')==='light'` pattern.
+  - `getChartColors()` — module-level helper returning `{ gridC, tickC }`, eliminating the repeated `_gridC`/`_tickC` derivation in every chart render function.
+  - `getTooltipConfig()` — module-level helper returning the 4 theme-aware base tooltip fields (`backgroundColor`, `borderColor`, `titleColor`, `bodyColor`); each chart spreads it and adds its own callbacks/fonts.
+  - `subtractPeriod` consolidated — the former `dbSubtractPeriod` (inside initApp, used local-time `setMonth`) replaced by the shared `subtractPeriod` (UTC-based); `dbSubtractPeriod` is gone.
+- **Key file paths:** `Index.html` (updated — inline JS removed), `script.js` (new — all JS lives here).
+- **Architecture note:** Module-level helpers (`isLight`, `getChartColors`, `getTooltipConfig`) are defined outside `initApp` at the top of `script.js` so they are available as soon as the file loads, independently of data.
+
+### 2026-05-09 — Decisions inbox merged
+- Scribe merged three inbox proposals (haaland-deployment-arch.md, nico-css-extraction.md, nico-js-extraction.md) into `.squad/decisions/decisions.md` and removed the inbox files.
+- Session log and orchestration log created for JS externalization.
