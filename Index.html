@@ -1,0 +1,308 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Spreads -— Análisis de Futuros</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+<div id="app-loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:1rem" role="status" aria-label="Cargando datos de mercado">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="animation:spin 1s linear infinite" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+  <p style="color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:.875rem;margin:0">Cargando datos de mercado…</p>
+</div>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="logo-tag">Análisis de Futuros</div>
+    <div class="logo-title">Monitor de Spreads</div>
+    <div class="logo-sub">CO1 · CO2 · CO3 · CO4 · CO5 · CO6 · CO7 · CO8 · CO9 · CO10</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:18px">
+    <button id="theme-toggle" onclick="toggleTheme()" class="theme-toggle" aria-label="Cambiar tema">
+      <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+      </svg>
+      <span id="theme-label">Claro</span>
+    </button>
+    <div class="header-meta">
+      <div class="lbl">Última actualización</div>
+      <div class="val" id="last-date">—</div>
+    </div>
+  </div>
+</header>
+
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('monitor',this)">Monitor de Spreads</button>
+  <button class="tab-btn" onclick="switchTab('heatmap',this)">Heatmap Costo de Roll</button>
+  <button class="tab-btn" onclick="switchTab('dated',this)">Dated Brent</button>
+</div>
+<div class="tab-panel active" id="tab-monitor">
+
+<!-- KPI ROW -->
+<div class="kpi-row" id="kpi-row"></div>
+
+<!-- 01 SPREAD -->
+<p class="section-label">01 — Spread Histórico</p>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title" id="spread-title">Spread CO2 vs CO1</div>
+      <div class="card-sub"  id="spread-formula">CO2 / CO1 − 1</div>
+    </div>
+    <div class="controls">
+      <span class="ctrl-label">Base</span><select id="sel-base"></select>
+      <span class="ctrl-label">Largo</span><select id="sel-long"></select>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="btn-pct" onclick="setSpreadMode('pct')">%</button>
+        <button class="toggle-btn"        id="btn-usd" onclick="setSpreadMode('usd')">USD</button>
+      </div>
+      <div class="period-pills" id="period-pills">
+        <span class="pill" data-period="1m"  onclick="setPeriodPill(this,'1m')">1M</span>
+        <span class="pill" data-period="3m"  onclick="setPeriodPill(this,'3m')">3M</span>
+        <span class="pill" data-period="6m"  onclick="setPeriodPill(this,'6m')">6M</span>
+        <span class="pill active" data-period="all" onclick="setPeriodPill(this,'all')">MAX</span>
+      </div>
+      <span class="ctrl-label">Desde</span>
+      <input type="date" id="date-from" onchange="onDateRangeChange()">
+      <span class="ctrl-label">Hasta</span>
+      <input type="date" id="date-to"   onchange="onDateRangeChange()">
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap h380"><canvas id="spreadChart"></canvas></div>
+  </div>
+  <div class="stat-strip" id="spread-stats"></div>
+</div>
+
+<!-- 02 DUAL MATRIX -->
+<p class="section-label">02 — Matriz de Spreads — Click para ver histórico</p>
+<div class="dual-matrix">
+
+  <div class="card" style="margin-bottom:0">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Spreads al 05/05/2026</div>
+        <div class="card-sub">Hoy · Click en cualquier celda para cargar el par</div>
+      </div>
+      <div class="controls">
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="mx-btn-pct" onclick="setMatrixMode('pct')">%</button>
+          <button class="toggle-btn"        id="mx-btn-usd" onclick="setMatrixMode('usd')">USD</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:14px">
+      <div class="matrix-wrap"><table id="matrix-today"></table></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Spreads históricos — Comparación</div>
+        <div class="card-sub" id="mx2-subtitle">Seleccioná un período</div>
+      </div>
+      <div class="controls">
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="mx2-btn-pct" onclick="setMatrixMode('pct')">%</button>
+          <button class="toggle-btn"        id="mx2-btn-usd" onclick="setMatrixMode('usd')">USD</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:10px">
+      <div class="matrix-wrap"><table id="matrix-compare"></table></div>
+    </div>
+    <div class="mx2-controls">
+      <div class="mx2-period-item" onclick="setMx2Period('1m',this)"><div class="mx2-radio-dot"></div>1 mes atrás</div>
+      <div class="mx2-period-item" onclick="setMx2Period('2m',this)"><div class="mx2-radio-dot"></div>2 meses atrás</div>
+      <div class="mx2-period-item" onclick="setMx2Period('3m',this)"><div class="mx2-radio-dot"></div>3 meses atrás</div>
+      <div class="mx2-period-item" onclick="setMx2Period('6m',this)"><div class="mx2-radio-dot"></div>6 meses atrás</div>
+      <div class="mx2-period-item" onclick="setMx2Period('1y',this)"><div class="mx2-radio-dot"></div>1 año atrás</div>
+      <div class="mx2-period-item" id="mx2-custom-item" onclick="setMx2Period('custom',this)">
+        <div class="mx2-radio-dot"></div>Personalizado
+        <input type="date" id="mx2-custom-date" style="display:none;margin-left:10px"
+          onchange="onMx2CustomDate()" onclick="event.stopPropagation()">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 03 CURVES -->
+<p class="section-label">03 — Curvas Forward — Comparación de estructura</p>
+<div class="card">
+  <div class="card-header" style="padding-bottom:0">
+    <div>
+      <div class="card-title">Forward Curve — CO1 a CO10</div>
+      <div class="card-sub">Curva actual (azul) vinculada con la curva de la matriz de comparación (amarillo)</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="curve-selectors">
+      <div class="curve-sel-block">
+        <div class="curve-dot-label" style="background:var(--curve1)"></div>
+        <span class="ctrl-label">Curva 1</span>
+        <span class="curve-fixed-label">Hoy — 05/05/2026</span>
+      </div>
+      <div class="curve-sel-block">
+        <div class="curve-dot-label" style="background:var(--curve2)"></div>
+        <span class="ctrl-label">Curva 2</span>
+        <span class="curve-fixed-label" id="curve2-label" style="color:var(--warn)">Seleccioná un período en la matriz →</span>
+      </div>
+    </div>
+    <div class="chart-wrap h260"><canvas id="curveChart"></canvas></div>
+    <div style="margin-top:14px;display:flex;gap:24px;flex-wrap:wrap" id="curve-legend"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-note"><span class="dot-live"></span>ICE Brent Crude — Histórico diario 2025–2026</div>
+  <div class="footer-note">Spread = Largo / Base − 1 &nbsp;|&nbsp; Largo − Base (USD)</div>
+</footer>
+
+
+</div><!-- /tab-monitor -->
+<!-- TAB: Heatmap -->
+<div class="tab-panel" id="tab-heatmap">
+<p class="section-label">Heatmap — Costo promedio de roll por mes y año</p>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title" id="hm-title">Roll CO1 → CO2 · Spread % promedio diario por mes</div>
+      <div class="card-sub">Más rojo = roll más caro · Verde = contango / roll barato · Recuadro azul = mes actual</div>
+    </div>
+    <div class="controls">
+      <span class="ctrl-label">Par</span>
+      <select id="hm-pair-sel" onchange="renderHeatmap(this.value)">
+        <option value="CO1_CO2">CO1→CO2</option><option value="CO2_CO3">CO2→CO3</option><option value="CO3_CO4">CO3→CO4</option><option value="CO4_CO5">CO4→CO5</option><option value="CO5_CO6">CO5→CO6</option><option value="CO6_CO7">CO6→CO7</option><option value="CO7_CO8">CO7→CO8</option><option value="CO8_CO9">CO8→CO9</option><option value="CO9_CO10">CO9→CO10</option>
+      </select>
+    </div>
+  </div>
+  <div class="card-body" style="padding-top:14px;overflow-x:auto">
+    <table class="hmap-tbl" id="hm-table">
+      <thead><tr><th>Año</th><th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th></tr></thead>
+      <tbody id="hm-tbody"><tr><td>2021</td><td class="hm1">-0.27</td><td class="hm3">-0.94</td><td class="hm2">-0.58</td><td class="hm2">-0.75</td><td class="hm2">-0.40</td><td class="hm3">-0.80</td><td class="hm3">-1.06</td><td class="hm3">-0.85</td><td class="hm3">-0.91</td><td class="hm3">-0.85</td><td class="hm3">-1.28</td><td class="hm1">-0.25</td></tr><tr><td>2022</td><td class="hm3">-0.98</td><td class="hm4">-2.25</td><td class="hm5">-3.07</td><td class="hm2">-0.72</td><td class="hm4">-2.10</td><td class="hm4">-2.75</td><td class="hm5">-4.04</td><td class="hm3">-1.29</td><td class="hm3">-1.33</td><td class="hm4">-1.95</td><td class="hm3">-0.82</td><td class="hm1">+0.43</td></tr><tr><td>2023</td><td class="hm1">+0.13</td><td class="hm2">-0.38</td><td class="hm2">-0.56</td><td class="hm2">-0.31</td><td class="hm1">-0.18</td><td class="hm1">+0.04</td><td class="hm2">-0.34</td><td class="hm2">-0.56</td><td class="hm3">-1.24</td><td class="hm4">-1.55</td><td class="hm2">-0.36</td><td class="hm1">-0.02</td></tr><tr><td>2024</td><td class="hm2">-0.49</td><td class="hm3">-0.88</td><td class="hm2">-0.75</td><td class="hm3">-1.11</td><td class="hm2">-0.46</td><td class="hm2">-0.75</td><td class="hm3">-1.01</td><td class="hm3">-1.00</td><td class="hm2">-0.74</td><td class="hm2">-0.56</td><td class="hm2">-0.55</td><td class="hm2">-0.51</td></tr><tr><td>2025</td><td class="hm3">-1.17</td><td class="hm2">-0.58</td><td class="hm2">-0.72</td><td class="hm3">-1.29</td><td class="hm3">-0.84</td><td class="hm3">-1.47</td><td class="hm3">-1.37</td><td class="hm3">-0.89</td><td class="hm3">-0.84</td><td class="hm2">-0.67</td><td class="hm2">-0.72</td><td class="hm2">-0.60</td></tr><tr><td>2026</td><td class="hm3">-1.09</td><td class="hm2">-0.68</td><td class="hm5">-4.71</td><td class="hm6 hm-cur">-7.42</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td><td class="hm-na">—</td></tr><tr style="border-top:1px solid var(--border)"><td style="color:var(--accent);font-size:8px">PROM HIST</td><td class="hm2" style="opacity:.85">-0.64</td><td class="hm3" style="opacity:.85">-0.95</td><td class="hm4" style="opacity:.85">-1.75</td><td class="hm3" style="opacity:.85">-1.21</td><td class="hm2" style="opacity:.85">-0.79</td><td class="hm3" style="opacity:.85">-1.15</td><td class="hm4" style="opacity:.85">-1.54</td><td class="hm3" style="opacity:.85">-0.92</td><td class="hm3" style="opacity:.85">-1.01</td><td class="hm3" style="opacity:.85">-1.10</td><td class="hm2" style="opacity:.85">-0.75</td><td class="hm1" style="opacity:.85">-0.19</td></tr></tbody>
+    </table>
+  </div>
+  <div class="stat-strip" id="hm-stats"></div>
+</div>
+<p class="section-label" style="margin-top:8px">Percentil actual vs historia del mismo mes · todos los pares</p>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">¿Dónde está el roll de hoy en términos históricos?</div>
+      <div class="card-sub">Percentil del spread actual vs todos los días del mismo mes desde 2021</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="pct-grid" id="pct-grid"></div>
+    <div class="chart-wrap h260"><canvas id="pctChart"></canvas></div>
+  </div>
+</div>
+</div><!-- /tab-heatmap -->
+
+
+<!-- ── TAB: DATED BRENT ────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-dated">
+
+<!-- 01 SPREAD Dated vs CO1 -->
+<p class="section-label">01 — Spread Dated Brent vs CO1</p>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Spread Dated Brent vs CO1</div>
+      <div class="card-sub" id="db-formula">Dated Brent / CO1 − 1</div>
+    </div>
+    <div class="controls">
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="db-btn-pct" onclick="setDbMode('pct')">%</button>
+        <button class="toggle-btn"        id="db-btn-usd" onclick="setDbMode('usd')">USD</button>
+      </div>
+      <div class="period-pills" id="db-period-pills">
+        <span class="pill" data-period="1m"  onclick="setDbPeriodPill(this,'1m')">1M</span>
+        <span class="pill" data-period="3m"  onclick="setDbPeriodPill(this,'3m')">3M</span>
+        <span class="pill" data-period="6m"  onclick="setDbPeriodPill(this,'6m')">6M</span>
+        <span class="pill active" data-period="all" onclick="setDbPeriodPill(this,'all')">MAX</span>
+      </div>
+      <span class="ctrl-label">Desde</span>
+      <input type="date" id="db-date-from" onchange="onDbDateRangeChange()">
+      <span class="ctrl-label">Hasta</span>
+      <input type="date" id="db-date-to"   onchange="onDbDateRangeChange()">
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap h380"><canvas id="dbChart"></canvas></div>
+  </div>
+  <div class="stat-strip" id="db-stats"></div>
+</div>
+
+<!-- 02 DUAL MATRIX Dated vs CO1 -->
+<p class="section-label">02 — Spread Dated vs CO1 — Comparación histórica</p>
+<div class="dual-matrix">
+
+  <div class="card" style="margin-bottom:0">
+    <div class="card-header">
+      <div>
+        <div class="card-title" id="db-mx-today-title">Spread al —</div>
+        <div class="card-sub">Hoy · Dated Brent vs CO1</div>
+      </div>
+      <div class="controls">
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="db-mx-btn-pct" onclick="setDbMatrixMode('pct')">%</button>
+          <button class="toggle-btn"        id="db-mx-btn-usd" onclick="setDbMatrixMode('usd')">USD</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:14px">
+      <div class="matrix-wrap"><table id="db-matrix-today"></table></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Spread histórico — Comparación</div>
+        <div class="card-sub" id="db-mx2-subtitle">Seleccioná un período</div>
+      </div>
+      <div class="controls">
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="db-mx2-btn-pct" onclick="setDbMatrixMode('pct')">%</button>
+          <button class="toggle-btn"        id="db-mx2-btn-usd" onclick="setDbMatrixMode('usd')">USD</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:10px">
+      <div class="matrix-wrap"><table id="db-matrix-compare"></table></div>
+    </div>
+    <div class="mx2-controls">
+      <div class="mx2-period-item" onclick="setDbMx2Period('1m',this)"><div class="mx2-radio-dot"></div>1 mes atrás</div>
+      <div class="mx2-period-item" onclick="setDbMx2Period('2m',this)"><div class="mx2-radio-dot"></div>2 meses atrás</div>
+      <div class="mx2-period-item" onclick="setDbMx2Period('3m',this)"><div class="mx2-radio-dot"></div>3 meses atrás</div>
+      <div class="mx2-period-item" onclick="setDbMx2Period('6m',this)"><div class="mx2-radio-dot"></div>6 meses atrás</div>
+      <div class="mx2-period-item" onclick="setDbMx2Period('1y',this)"><div class="mx2-radio-dot"></div>1 año atrás</div>
+      <div class="mx2-period-item" id="db-mx2-custom-item" onclick="setDbMx2Period('custom',this)">
+        <div class="mx2-radio-dot"></div>Personalizado
+        <input type="date" id="db-mx2-custom-date" style="display:none;margin-left:10px"
+          onchange="onDbMx2CustomDate()" onclick="event.stopPropagation()">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /tab-dated -->
+
+
+
+
+
+<script src="script.js"></script>
+</body>
+</html>
