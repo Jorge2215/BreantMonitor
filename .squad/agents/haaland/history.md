@@ -39,3 +39,6 @@
 - Scribe merged .squad/decisions/inbox/haaland-cicd-workflow.md into .squad/decisions/decisions.md and removed the inbox file.
 - Created .github/workflows/azure-static-web-apps.yml and logged orchestration/session files.
 
+
+### 2026-05-09 — Team updates
+- haaland: architecture analysis completed; recommended Option A (GitHub API).

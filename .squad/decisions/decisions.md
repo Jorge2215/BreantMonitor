@@ -253,3 +253,172 @@ Jorge must ensure `AZURE_STATIC_WEB_APPS_API_TOKEN` is set in:
 The token is obtained from the Azure Portal under the Static Web App resource
 (Manage deployment token / Deployment token).
 
+---
+
+# From inbox: haaland-json-editor-architecture.md
+
+1. # Decision: JSON Editor Architecture for Brent Monitor
+
+**Date:** 2026-05-09  
+**Author:** Haaland (Lead)  
+**Status:** PROPOSED — pending Jorge approval
+
+---
+
+## Problem
+
+Jorge wants to edit `Data/raw.json` and `Data/dated-brent.json` from the dashboard UI — no manual file editing, no git CLI. This is a pure static web app with zero backend.
+
+---
+
+## Options Evaluated
+
+### Option A — GitHub API (browser-side commits) ✅ RECOMMENDED
+
+| Criteria | Assessment |
+|---|---|
+| **How it works** | Browser calls GitHub REST API (`PUT /repos/{owner}/{repo}/contents/{path}`) to commit updated JSON directly. Push to `main` triggers existing CI/CD → SWA redeploys automatically. |
+| **Feasibility** | Fully feasible. No infrastructure changes. Works within current static-only architecture. |
+| **User experience** | Click "Save" → done. Data live in ~90 seconds after CI/CD redeploy. User enters a GitHub PAT once per session. |
+| **Infrastructure changes** | None. Uses existing CI/CD pipeline as-is. |
+| **Security** | PAT stored in `sessionStorage` (cleared on tab close, never committed). PAT needs `repo` scope — scoped to this repo only via fine-grained token. HTTPS in transit. SWA already requires authentication. |
+| **Maintenance** | Near zero. GitHub API is stable. No server to maintain. |
+
+### Option B — Export/Download only ❌ REJECTED
+
+| Criteria | Assessment |
+|---|---|
+| **Feasibility** | Trivial to build. |
+| **User experience** | Edit → Download → open repo → commit → push → wait. 5+ manual steps. Defeats the stated goal. |
+| **Infrastructure changes** | None. |
+| **Security** | No risk. |
+| **Maintenance** | None. |
+
+**Why rejected:** Jorge explicitly said "without manually editing files in the repository." This option is exactly that. It's a fancy text editor with extra steps.
+
+### Option C — Azure Functions backend ❌ REJECTED
+
+| Criteria | Assessment |
+|---|---|
+| **Feasibility** | Requires adding `api/` folder, Azure Functions project, Node.js/Python runtime, function bindings. |
+| **User experience** | Best UX if fully built — but same result as Option A with 10x the complexity. |
+| **Infrastructure changes** | Major. New project structure, new Azure resources, new deployment config, `skip_app_build` must change. |
+| **Security** | Server-side PAT (more secure) but now you're managing Azure Function secrets, CORS, auth middleware. |
+| **Maintenance** | High. Azure Functions runtime updates, cold starts, monitoring, cost. |
+
+**Why rejected:** Sledgehammer for a nail. The GitHub API already does exactly what a backend function would do — commit a file. Adding a function just to proxy that call adds complexity with zero functional benefit for this use case.
+
+---
+
+## Recommendation: Option A — GitHub API
+
+**Pick Option A. No contest.**
+
+The existing CI/CD pipeline is the backend. GitHub's API is the write layer. The browser is the editor. Every piece already exists — we just connect them.
+
+Trade-off: Jorge needs a GitHub Personal Access Token (fine-grained, scoped to this repo, `contents: write` permission). He enters it once per browser session. It never leaves the browser tab's memory. Given the SWA already requires Azure AD authentication, this is an authenticated user adding a second credential for write access — acceptable.
+
+---
+
+## Page Structure: One page, two tabs
+
+**One page. Two tabs.** Not two separate pages.
+
+Reasons:
+1. Both files share the same workflow: load JSON → edit rows → validate → save via GitHub API.
+2. The PAT authentication is session-wide — one login flow, both editors available.
+3. Navigation between two pages adds friction for zero benefit.
+4. A tabbed interface (`raw.json | dated-brent.json`) is cleaner and keeps the dashboard cohesive.
+
+The editor page should be a new `editor.html` (not embedded in `Index.html`) — the dashboard and editor are different tools with different layouts. Link from dashboard → editor via nav button.
+
+---
+
+## Implementation Scope
+
+| Component | Detail |
+|---|---|
+| `editor.html` | New page with tabbed editor UI |
+| `editor.js` | GitHub API integration, JSON validation, table-based editing |
+| Tab 1: raw.json | Editable table: Date + CO1–CO10 columns. Add/edit/delete rows. |
+| Tab 2: dated-brent.json | Editable table: Date + DB column. Add/edit/delete rows. |
+| Auth | PAT input modal on first save attempt. Stored in `sessionStorage`. |
+| Validation | Numeric fields validated before save. Date format enforced (YYYY-MM-DD). |
+| Save flow | JSON serialized → Base64 encoded → PUT to GitHub API → commit created → CI/CD triggers |
+
+---
+
+## What This Does NOT Include
+
+- No Azure Functions
+- No build tools or bundlers
+- No npm dependencies
+- No changes to existing `Index.html`, `script.js`, or `styles.css`
+
+This stays pure static. The only new files are `editor.html` and `editor.js`.
+
+
+---
+
+# From inbox: nico-editor-page.md
+
+1. # Decision: JSON Data Editor Page
+
+**Date:** 2026-05-09
+**Author:** Nico (Frontend Dev)
+**Files affected:** `editor.html` (new), `editor.js` (new), `Index.html` (modified)
+
+## What Was Built
+
+A standalone two-tab data editor page (`editor.html` + `editor.js`) that allows authorized users to view, add, edit, and delete rows in `Data/raw.json` and `Data/dated-brent.json` directly from the browser — no backend required.
+
+## Architecture
+
+**GitHub API approach** (as decided by Haaland): The editor commits JSON changes directly to GitHub via browser-side REST API calls using the [GitHub Contents API](https://docs.github.com/en/rest/repos/contents):
+
+| Operation | API call |
+|-----------|----------|
+| Load data | `GET /repos/{owner}/{repo}/contents/{path}?ref=main` |
+| Save data | `PUT /repos/{owner}/{repo}/contents/{path}` |
+| Verify token | `GET /user` |
+
+## Key Design Decisions
+
+### Token storage: sessionStorage only
+PAT is stored in `sessionStorage` — cleared on tab close, never written to `localStorage` or cookies. Input is cleared immediately after use.
+
+### Stale SHA prevention
+Every save workflow re-fetches the current file SHA from GitHub before committing. This prevents overwrite conflicts when another process has updated the file since the editor last loaded it.
+
+### Canonical file order: ASC, display order: DESC
+- Files on GitHub are always saved oldest-first (ASC by Date). This matches how the data was originally structured.
+- The editor displays rows newest-first (DESC) for usability.
+- Sort is applied in-memory at render time (display) and at save time (before commit).
+
+### Internal `_id` field for row identity
+Each row gets a unique `_id` assigned when loaded. This field is used for edit/delete tracking across renders. It is stripped before saving to GitHub (never written to JSON files).
+
+### Performance: pagination + DocumentFragment
+- 100 rows per page — keeps render time < 16ms for 500+ row datasets.
+- `DocumentFragment` is used for batch DOM construction before a single insert, minimising reflows.
+- Single click listener per table (event delegation) avoids per-row handler overhead.
+
+### Validation
+- Date fields: YYYY-MM-DD regex + real date check via `new Date()`
+- Numeric fields: `parseFloat` + `isFinite` check; rounded to 2dp on save
+- Validation runs inline (highlighting bad cells) and at save-to-GitHub time
+
+## Files
+
+| File | Change | Purpose |
+|------|--------|---------|
+| `editor.html` | Created | Two-tab UI, token section, tables, status log |
+| `editor.js` | Created | All JS: API helpers, state, CRUD, validation |
+| `Index.html` | Modified | Added "✏️ Editor" nav link in header |
+
+## What Was Intentionally NOT Changed
+
+- `styles.css` — untouched; editor uses the same design tokens via CSS custom properties
+- `script.js` — untouched
+- `Data/*.json` — untouched; the editor only reads/writes them at user request via GitHub API
+
