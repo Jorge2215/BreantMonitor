@@ -135,6 +135,17 @@ Output:
 Provide the HTML, CSS, and JavaScript code for the update page(s).
 Include explanatory comments and ensure the solution is easy to integrate into the existing dashboard.
 
+## Quitar codigo JScript de Editor.html y pasarlo a archivo externo Editor.js
+Context:
+Our page "Editor.html" used for editing Brent a Contract Values has JScript code embedded
+
+Goal:
+Mode the logic contained on embedded JScript from Editor.html to an external script file with name Editor.js
+
+Output:
+Provide the HTML, CSS, and JavaScript code for the update page(s).
+Include explanatory comments and ensure the solution is easy to integrate into the existing dashboard.
+
 ##Resume Session
 copilot --resume=f4de3bca-3e56-48d2-8b72-4aed69d355b2
 

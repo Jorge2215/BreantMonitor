@@ -47,3 +47,8 @@
 
 ### 2026-05-09 — Team updates
 - nico: built editor.html (428 lines) and editor.js (744 lines); added nav link; committed to dev branch (4f2c762).
+
+### 2026-05-10 — Editor page styles bug fix (commit 66edcc4)
+- **Root cause:** `styles.css` was renamed to `Index.css` (and `script.js` to `Index.js`) as a naming-consistency refactor, but those renames were never committed and `editor.html` still referenced the old `styles.css` path. With the file gone from disk, all CSS custom properties (`--surface`, `--accent`, etc.) were missing and the editor page rendered white/unstyled.
+- **Fix:** Updated `editor.html` `<link>` from `styles.css` → `Index.css`. Also staged and committed the unstaged renames (`styles.css`→`Index.css`, `script.js`→`Index.js`) and the `Index.html` update that referenced them, so all files are consistent.
+- **Lesson:** When renaming shared CSS/JS files that other pages depend on, always search ALL HTML files for references before committing. Azure SWA is case-sensitive — a missing file silently produces a white page with no console error in some environments.
