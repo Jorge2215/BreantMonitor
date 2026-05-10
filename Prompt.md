@@ -105,6 +105,38 @@ Provide the complete GitHub Actions workflow YAML file,
 ready to be placed in the .github/workflows/ directory of the repository.
 Include comments explaining each section of the workflow.
 
+## Actualizacion de archivos JSON con series historicas de datos
+
+Context:
+We have a Static Web App that currently reads data from two JSON files:
+1. raw.json → contains historical series of contract values (sales contracts).
+2. dated-brent.json → contains historical Brent Oil price quotations.
+
+Goal:
+Develop one or two web pages (depending on practicality) that allow the user to edit and update these JSON files directly from the dashboard interface. 
+The purpose is to keep both historical series updated without manually editing files in the repository.
+
+Requirements:
+- Provide a clear, user-friendly interface for editing JSON data.
+- Support basic CRUD operations (Create, Read, Update, Delete) on entries.
+- Ensure validation of input fields (e.g., date format, numeric values).
+- Display the current JSON data in a structured table or form.
+- Allow saving changes back to the JSON files in the /Data folder.
+- Preserve the existing layout and design style of the dashboard.
+- Include comments in the code explaining how the JSON update logic works.
+
+Technical Notes:
+- Use JavaScript (or a framework already in use in the project) to fetch and update the JSON files.
+- Ensure that updates are reflected immediately in the Static Web App after saving.
+- Consider separating the two editors (one for raw.json, one for dated-brent.json) if it simplifies usability.
+- Keep the solution modular and maintainable for future extensions.
+
+Output:
+Provide the HTML, CSS, and JavaScript code for the update page(s).
+Include explanatory comments and ensure the solution is easy to integrate into the existing dashboard.
+
+
+
 
 
 ##Resume Session
@@ -112,3 +144,15 @@ copilot --resume=f4de3bca-3e56-48d2-8b72-4aed69d355b2
 
 ##Probar la web localmente
 Probar la web con npx serve
+
+##
+Obtener secret de Static Web App
+az staticwebapp secrets list --name brent-spread-monitor-swa --query "properties.apiKey"
+
+## Token para acceso desde el editor al repo de Github
+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
+
+## Uso de la App en Azure
+Pagina Principal:  https://proud-plant-02f07951e.7.azurestaticapps.net/login
+Pagina de Edicion: https://proud-plant-02f07951e.7.azurestaticapps.net/editor.html
+(Tambien se accede mediante link a la pagina principa)
