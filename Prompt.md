@@ -135,10 +135,6 @@ Output:
 Provide the HTML, CSS, and JavaScript code for the update page(s).
 Include explanatory comments and ensure the solution is easy to integrate into the existing dashboard.
 
-
-
-
-
 ##Resume Session
 copilot --resume=f4de3bca-3e56-48d2-8b72-4aed69d355b2
 
@@ -150,7 +146,8 @@ Obtener secret de Static Web App
 az staticwebapp secrets list --name brent-spread-monitor-swa --query "properties.apiKey"
 
 ## Token para acceso desde el editor al repo de Github
-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
+Ver en PAT.TXT
+
 
 ## Uso de la App en Azure
 Pagina Principal:  https://proud-plant-02f07951e.7.azurestaticapps.net/login
