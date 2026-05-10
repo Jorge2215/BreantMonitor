@@ -333,6 +333,9 @@
     type="password"
     id="token-input"
     class="token-input"	
+    placeholder="GitHub Personal Access Token (scope: repo write)"
+    onkeydown="if(event.key==='Enter') connectToken()"
+  >
   <button class="btn-connect" onclick="connectToken()">Conectar</button>
 </div>
 
