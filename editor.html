@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Datos — Monitor de Spreads</title>
+<link rel="stylesheet" href="styles.css">
+
+<style>
+/* ══════════════════════════════════════════════════════════
+   EDITOR-SPECIFIC STYLES
+   Extends styles.css design tokens — do NOT modify styles.css.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Nav back link (matches .theme-toggle visually) ── */
+.nav-back {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 14px;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:6px;
+  color:var(--text2);
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.04em;
+  text-decoration:none;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.nav-back:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft) }
+
+/* ── Token bar ── */
+.token-section {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 20px;
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+.token-label {
+  font-family:'Open Sans',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.16em;
+  color:var(--text3);
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.token-input {
+  flex:1;
+  min-width:260px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:6px;
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  padding:7px 12px;
+  transition:all .15s ease;
+}
+.token-input::placeholder { color:var(--text3) }
+.token-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft) }
+
+.btn-connect {
+  padding:7px 18px;
+  background:var(--accent);
+  border:none;
+  border-radius:6px;
+  color:#fff;
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  cursor:pointer;
+  transition:all .15s ease;
+  white-space:nowrap;
+}
+.btn-connect:hover { background:var(--accent-hover) }
+
+.token-status {
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text2);
+  white-space:nowrap;
+}
+
+/* ── Editor toolbar ── */
+.editor-toolbar {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.btn-toolbar {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:6px;
+  color:var(--text2);
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.04em;
+  cursor:pointer;
+  transition:all .15s ease;
+  white-space:nowrap;
+}
+.btn-toolbar:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft) }
+.btn-toolbar.primary { background:var(--accent); border-color:var(--accent); color:#fff }
+.btn-toolbar.primary:hover { background:var(--accent-hover); border-color:var(--accent-hover) }
+
+/* ── Unsaved changes badge ── */
+.dirty-badge {
+  display:none;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  background:rgba(255,201,71,.13);
+  border:1px solid var(--warn);
+  border-radius:20px;
+  color:var(--warn);
+  font-family:'Open Sans',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
+/* ── Filter bar ── */
+.filter-bar {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+.filter-bar input[type=date] { padding:6px 10px; font-size:12px }
+
+/* ── Table wrapper ── */
+.table-wrap {
+  overflow-x:auto;
+  border-radius:8px;
+  border:1px solid var(--border);
+  margin-bottom:12px;
+}
+
+/* ── Editor table ── */
+.editor-table {
+  width:100%;
+  border-collapse:collapse;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+}
+
+.editor-table thead th {
+  background:var(--surface2);
+  color:var(--text3);
+  font-family:'Open Sans',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  padding:10px 12px;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+.editor-table tbody tr { border-bottom:1px solid var(--border); transition:background .1s ease }
+.editor-table tbody tr:last-child { border-bottom:none }
+.editor-table tbody tr:hover { background:var(--surface2) }
+.editor-table tbody tr.editing-row { background:rgba(77,171,247,.06) }
+.editor-table tbody tr.new-row { background:rgba(32,201,151,.06) }
+
+.editor-table tbody td {
+  padding:8px 12px;
+  color:var(--text);
+  white-space:nowrap;
+}
+.editor-table tbody td.date-cell { color:var(--accent); font-weight:500 }
+
+/* ── Edit-mode cell inputs ── */
+.cell-input {
+  background:var(--surface3);
+  border:1px solid var(--border3);
+  border-radius:4px;
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  padding:4px 8px;
+  width:100%;
+  min-width:76px;
+  transition:all .15s ease;
+}
+.cell-input.date-input { min-width:130px }
+.cell-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft) }
+.cell-input.error { border-color:var(--neg); box-shadow:0 0 0 2px var(--neg-soft) }
+
+/* ── Action buttons inside rows ── */
+.actions-cell { display:flex; gap:4px; white-space:nowrap }
+
+.btn-row {
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:4px 8px;
+  background:transparent;
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--text3);
+  font-family:'Open Sans',sans-serif;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .12s ease;
+  white-space:nowrap;
+}
+.btn-row:hover { border-color:var(--accent); color:var(--accent) }
+.btn-row.save { border-color:var(--pos); color:var(--pos) }
+.btn-row.save:hover { background:var(--pos-soft) }
+.btn-row.del { border-color:var(--neg); color:var(--neg) }
+.btn-row.del:hover { background:var(--neg-soft) }
+
+/* ── Pagination ── */
+.pagination {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1;
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  color:var(--text2);
+}
+.btn-page {
+  padding:5px 10px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--text2);
+  font-size:12px;
+  cursor:pointer;
+  transition:all .12s ease;
+}
+.btn-page:hover { border-color:var(--accent); color:var(--accent) }
+.btn-page:disabled { opacity:.35; cursor:not-allowed; pointer-events:none }
+.page-info { color:var(--text3) }
+
+/* ── Row count label ── */
+.row-count-label {
+  font-family:'Open Sans',sans-serif;
+  font-size:11px;
+  color:var(--text3);
+  white-space:nowrap;
+  padding-left:16px;
+}
+
+/* ── Fixed-bottom status log ── */
+.status-log {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  padding:11px 32px;
+  background:rgba(10,14,19,.90);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  color:var(--text);
+  z-index:100;
+  display:none;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  transition:opacity .2s ease;
+}
+.status-log.visible { display:flex }
+.status-log.success { color:var(--pos); border-top-color:var(--pos) }
+.status-log.error   { color:var(--neg); border-top-color:var(--neg) }
+.status-log.warning { color:var(--warn); border-top-color:var(--warn) }
+.status-log.info    { color:var(--accent); border-top-color:var(--accent) }
+[data-theme="light"] .status-log { background:rgba(247,249,252,.93) }
+
+/* Extra bottom padding so the log doesn't overlap content */
+.wrap { padding-bottom:80px }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
+<header>
+  <div>
+    <div class="logo-tag">Editor de Datos</div>
+    <div class="logo-title">Editor de Datos</div>
+    <div class="logo-sub">raw.json · dated-brent.json · ICE Brent Crude Futuros</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="Index.html" class="nav-back">← Monitor</a>
+    <button id="theme-toggle" onclick="toggleTheme()" class="theme-toggle" aria-label="Cambiar tema">
+      <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+      </svg>
+      <span id="theme-label">Claro</span>
+    </button>
+  </div>
+</header>
+
+<!-- ── GITHUB TOKEN SECTION ───────────────────────────────────────────────── -->
+<div class="token-section">
+  <span class="token-label">GitHub Token</span>
+  <span id="token-status" class="token-status">🔴 No conectado</span>
+  <input
+    type="password"
+    id="token-input"
+    class="token-input"
+    placeholder="GitHub Personal Access Token (scope: repo write)"
+    onkeydown="if(event.key==='Enter') connectToken()"
+  >
+  <button class="btn-connect" onclick="connectToken()">Conectar</button>
+</div>
+
+<!-- ── TAB BAR ────────────────────────────────────────────────────────────── -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchEditorTab('raw', this)">Contratos (raw.json)</button>
+  <button class="tab-btn"        onclick="switchEditorTab('dated', this)">Dated Brent (dated-brent.json)</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB 1 — raw.json
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-raw">
+  <div class="editor-toolbar">
+    <button class="btn-toolbar"         onclick="addRow('raw')">+ Agregar Fila</button>
+    <button class="btn-toolbar primary" onclick="saveToGitHub('raw')">💾 Guardar en GitHub</button>
+    <button class="btn-toolbar"         onclick="reloadFromGitHub('raw')">🔄 Recargar</button>
+    <span id="raw-dirty-badge" class="dirty-badge">⚠️ Cambios sin guardar</span>
+    <div class="filter-bar">
+      <span class="ctrl-label">Filtrar</span>
+      <input type="date" id="raw-filter-from" onchange="applyFilter('raw')" title="Desde">
+      <span class="ctrl-label">—</span>
+      <input type="date" id="raw-filter-to"   onchange="applyFilter('raw')" title="Hasta">
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="editor-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>CO1</th><th>CO2</th><th>CO3</th><th>CO4</th><th>CO5</th>
+          <th>CO6</th><th>CO7</th><th>CO8</th><th>CO9</th><th>CO10</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="raw-tbody"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;align-items:center;margin-bottom:8px">
+    <div class="pagination" id="raw-pagination"></div>
+    <div class="row-count-label" id="raw-row-count"></div>
+  </div>
+</div><!-- /tab-raw -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB 2 — dated-brent.json
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-dated">
+  <div class="editor-toolbar">
+    <button class="btn-toolbar"         onclick="addRow('dated')">+ Agregar Fila</button>
+    <button class="btn-toolbar primary" onclick="saveToGitHub('dated')">💾 Guardar en GitHub</button>
+    <button class="btn-toolbar"         onclick="reloadFromGitHub('dated')">🔄 Recargar</button>
+    <span id="dated-dirty-badge" class="dirty-badge">⚠️ Cambios sin guardar</span>
+    <div class="filter-bar">
+      <span class="ctrl-label">Filtrar</span>
+      <input type="date" id="dated-filter-from" onchange="applyFilter('dated')" title="Desde">
+      <span class="ctrl-label">—</span>
+      <input type="date" id="dated-filter-to"   onchange="applyFilter('dated')" title="Hasta">
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="editor-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>DB</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="dated-tbody"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;align-items:center;margin-bottom:8px">
+    <div class="pagination" id="dated-pagination"></div>
+    <div class="row-count-label" id="dated-row-count"></div>
+  </div>
+</div><!-- /tab-dated -->
+
+</div><!-- /wrap -->
+
+<!-- ── STATUS LOG (fixed bottom) ─────────────────────────────────────────── -->
+<div id="status-log" class="status-log"></div>
+
+<script src="editor.js"></script>
+</body>
+</html>

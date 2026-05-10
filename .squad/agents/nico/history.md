@@ -29,6 +29,17 @@
 - **Key file paths:** `Index.html` (updated — inline JS removed), `script.js` (new — all JS lives here).
 - **Architecture note:** Module-level helpers (`isLight`, `getChartColors`, `getTooltipConfig`) are defined outside `initApp` at the top of `script.js` so they are available as soon as the file loads, independently of data.
 
+### 2026-05-09 — Editor page (editor.html + editor.js)
+- **What was built:** A standalone two-tab data editor (`editor.html` / `editor.js`) for `Data/raw.json` and `Data/dated-brent.json`. No backend — GitHub Contents API called directly from the browser using a user-supplied PAT stored in `sessionStorage`.
+- **Token flow:** Input cleared immediately after verification. `sessionStorage` is used (session-only, tab-close clears it). On page load, existing token is re-verified via `GET /user` before data is loaded.
+- **Stale SHA prevention:** Every save re-fetches the current file SHA before committing (`PUT /repos/.../contents/{path}` requires the current SHA). This prevents conflicts when multiple sessions edit the same file.
+- **Performance strategy for 500+ rows:** Pagination (100 rows/page) + `DocumentFragment` batch DOM construction + single event delegation listener per table. Avoids per-row handler attachment.
+- **Internal `_id` field:** Each row gets a stable `_id` counter field assigned on load. Used for edit/delete tracking. Stripped from JSON before saving to GitHub.
+- **Sort convention:** Display order = DESC (newest first). File order on GitHub = ASC (oldest first). Sort applied at render and at save time respectively.
+- **Validation:** Date = YYYY-MM-DD regex + real calendar check. Numeric = `parseFloat` + `isFinite`. Values rounded to 2dp on row-save. Full dataset validated before GitHub commit.
+- **Dirty badge:** Shown when any row has been locally saved (`_saveRow`) or deleted (`deleteRow`). Adding then canceling a new row does NOT trigger the dirty badge (no real change occurred).
+- **styles.css untouched:** Editor-specific CSS lives in a `<style>` block inside `editor.html`. All tokens reference the same CSS custom properties from `styles.css`.
+
 ### 2026-05-09 — Decisions inbox merged
 - Scribe merged three inbox proposals (haaland-deployment-arch.md, nico-css-extraction.md, nico-js-extraction.md) into `.squad/decisions/decisions.md` and removed the inbox files.
 - Session log and orchestration log created for JS externalization.
