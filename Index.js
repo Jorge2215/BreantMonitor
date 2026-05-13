@@ -49,6 +49,7 @@ function subtractPeriod(base,p){const d=new Date(base+'T12:00:00Z');if(p==='1m')
 function findRowOnOrBefore(t){const h=ALL_DATES.filter(d=>d<=t);if(!h.length)return RAW[0];return RAW.find(r=>r.Date===h[h.length-1])}
 
 document.getElementById('last-date').textContent=LAST_DATE;
+document.getElementById('matrix-title').textContent='Spreads al '+LAST_DATE.split('-').reverse().join('/');
 const fromEl=document.getElementById('date-from'),toEl=document.getElementById('date-to');
 fromEl.min=FIRST_DATE;fromEl.max=LAST_DATE;fromEl.value=FIRST_DATE;
 toEl.min=FIRST_DATE;toEl.max=LAST_DATE;toEl.value=LAST_DATE;
@@ -134,7 +135,7 @@ function renderMatrix(tableId,dataRow,clickable){
       const cls=colorCls(v);
       const disp=matrixMode==='pct'?`${v>=0?'+':''}${v.toFixed(2)}%`:`${v>=0?'+$':'-$'}${Math.abs(v).toFixed(2)}`;
       const sel=rC===selBase&&cC===selLong;
-      if(clickable)html+=`<td class="clickable ${cls}${sel?' selected':''}" data-base="${rC}" data-long="${cC}" onclick="onMatrixCellClick('${rC}','${cC}')">${disp}</td>`;
+      if(clickable)html+=`<td class="clickable ${cls}${sel?' selected':''}" data-base="${rC}" data-long="${cC}" tabindex="0" role="button" onclick="onMatrixCellClick('${rC}','${cC}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();onMatrixCellClick('${rC}','${cC}')}">${disp}</td>`;
       else html+=`<td class="${cls}">${disp}</td>`;
     });
     html+='</tr>';
@@ -210,6 +211,7 @@ function toggleTheme() {
   renderSpreadChart();
   buildForwardChart();
   if (typeof renderPctChart === 'function') renderPctChart();
+  if (dbChart) renderDbChart();
 }
 
 // ── AUTO-SELECT 1 MES ATRÁS ON LOAD ─────────────────────────────────────────
@@ -385,10 +387,11 @@ function renderPctChart() {
   pairs.forEach(function(p) {
     var key=p[0]+'_'+p[1], d=ROLL_DATA.percentiles[key]||{};
     var pct=d.pct||0;
+    var pctCls = pct <= 33 ? 'pos' : pct >= 67 ? 'neg' : 'warn';
     var card=document.createElement('div');
     card.className='pct-card';
     card.innerHTML='<div class="pct-pair-lbl">'+p[0]+'→'+p[1]+'</div>'+
-      '<div class="pct-num neg">'+Math.round(pct)+'° pct</div>'+
+      '<div class="pct-num '+pctCls+'">'+Math.round(pct)+'° pct</div>'+
       '<div class="pct-detail">Hoy: '+(d.today||0).toFixed(2)+'%</div>'+
       '<div class="pct-detail">Avg hist: '+(d.hist_avg||0).toFixed(2)+'%</div>'+
       '<div class="pct-bar-wrap"><div class="pct-bar-fill" style="width:100%"></div>'+
@@ -499,7 +502,7 @@ function renderDbChart(){
     labels.push(r.Date);
     series.push(dbSpreadValue(r, dbMode));
   });
-  const _c1 = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4dabf7';
+  const _c1 = getComputedStyle(document.documentElement).getPropertyValue('--curve1').trim() || '#4dabf7';
   const {gridC,tickC} = getChartColors();
   const ctx = document.getElementById('dbChart').getContext('2d');
   if(dbChart) dbChart.destroy();
@@ -636,17 +639,6 @@ window.onDbMx2CustomDate    = onDbMx2CustomDate;
 window.onMx2CustomDate      = onMx2CustomDate;
 window.renderHeatmap        = renderHeatmap;
 
-// Ensure dated chart rebuilds on theme toggle
-(function(){
-  const origToggle = window.toggleTheme;
-  if(typeof origToggle === 'function'){
-    window.toggleTheme = function(){
-
-      origToggle();
-      if(dbInitDone) renderDbChart();
-    };
-  }
-})();
 // Remove loading overlay once app is ready
 (function(){ var ov = document.getElementById('app-loading'); if(ov) ov.remove(); })();
 
@@ -658,25 +650,41 @@ window.renderHeatmap        = renderHeatmap;
   var overlay = document.getElementById('app-loading');
   if (overlay) overlay.style.display = 'flex';
 
+  var controller = new AbortController();
+  var timeoutId  = setTimeout(function () { controller.abort(); }, 15000);
+
+  function showError(msg, detail) {
+    clearTimeout(timeoutId);
+    var ov = document.getElementById('app-loading');
+    if (ov) {
+      ov.style.display = 'flex';
+      ov.innerHTML =
+        '<div style="text-align:center;padding:2rem">' +
+          '<p style="color:var(--neg);font-size:1.1rem;margin-bottom:.5rem">⚠ ' + msg + '</p>' +
+          (detail ? '<p style="color:var(--text2);font-family:\'JetBrains Mono\',monospace;font-size:.8rem">' + detail + '</p>' : '') +
+        '</div>';
+    }
+  }
+
   Promise.all([
-    fetch('Data/raw.json').then(function (r) {
+    fetch('Data/raw.json', { signal: controller.signal }).then(function (r) {
       if (!r.ok) throw new Error('raw.json: HTTP ' + r.status);
       return r.json();
     }),
-    fetch('Data/dated-brent.json').then(function (r) {
+    fetch('Data/dated-brent.json', { signal: controller.signal }).then(function (r) {
       if (!r.ok) throw new Error('dated-brent.json: HTTP ' + r.status);
       return r.json();
     })
   ])
   .then(function (data) {
+    clearTimeout(timeoutId);
     initApp(data[0], data[1]);
   })
   .catch(function (err) {
-    var ov = document.getElementById('app-loading');
-    if (ov) {
-      ov.style.display = 'flex';
-      ov.innerHTML = '<div style="text-align:center;padding:2rem"><p style="color:var(--neg);font-size:1.1rem;margin-bottom:.5rem">⚠ Error al cargar datos</p><p style="color:var(--text2);font-family:JetBrains Mono,monospace;font-size:.8rem">' + err.message + '</p></div>';
-    }
+    var msg = err.name === 'AbortError'
+      ? 'Tiempo de espera agotado. Por favor recargue la página.'
+      : 'Error al cargar datos. Por favor recargue la página.';
+    showError(msg, err.name !== 'AbortError' ? err.message : null);
     console.error('[BreantMonitor] Data load failed:', err);
   });
 })();

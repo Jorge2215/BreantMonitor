@@ -107,3 +107,6 @@ The app reads the JSON files at load time. For local testing, reloading the page
 -----
 
 If you need a CSV/ETL guideline or a small script to transform source CSVs into the expected JSON layout, open an issue or ask and I will add a small converter script to the repo.
+
+## Resume Squad
+copilot --resume=5c8da8dc-02df-4b0a-bf17-b9a48801a3ce
