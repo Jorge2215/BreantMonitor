@@ -135,7 +135,7 @@ function renderMatrix(tableId,dataRow,clickable){
       const cls=colorCls(v);
       const disp=matrixMode==='pct'?`${v>=0?'+':''}${v.toFixed(2)}%`:`${v>=0?'+$':'-$'}${Math.abs(v).toFixed(2)}`;
       const sel=rC===selBase&&cC===selLong;
-      if(clickable)html+=`<td class="clickable ${cls}${sel?' selected':''}" data-base="${rC}" data-long="${cC}" onclick="onMatrixCellClick('${rC}','${cC}')">${disp}</td>`;
+      if(clickable)html+=`<td class="clickable ${cls}${sel?' selected':''}" data-base="${rC}" data-long="${cC}" tabindex="0" role="button" onclick="onMatrixCellClick('${rC}','${cC}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();onMatrixCellClick('${rC}','${cC}')}">${disp}</td>`;
       else html+=`<td class="${cls}">${disp}</td>`;
     });
     html+='</tr>';
@@ -650,25 +650,41 @@ window.renderHeatmap        = renderHeatmap;
   var overlay = document.getElementById('app-loading');
   if (overlay) overlay.style.display = 'flex';
 
+  var controller = new AbortController();
+  var timeoutId  = setTimeout(function () { controller.abort(); }, 15000);
+
+  function showError(msg, detail) {
+    clearTimeout(timeoutId);
+    var ov = document.getElementById('app-loading');
+    if (ov) {
+      ov.style.display = 'flex';
+      ov.innerHTML =
+        '<div style="text-align:center;padding:2rem">' +
+          '<p style="color:var(--neg);font-size:1.1rem;margin-bottom:.5rem">⚠ ' + msg + '</p>' +
+          (detail ? '<p style="color:var(--text2);font-family:\'JetBrains Mono\',monospace;font-size:.8rem">' + detail + '</p>' : '') +
+        '</div>';
+    }
+  }
+
   Promise.all([
-    fetch('Data/raw.json').then(function (r) {
+    fetch('Data/raw.json', { signal: controller.signal }).then(function (r) {
       if (!r.ok) throw new Error('raw.json: HTTP ' + r.status);
       return r.json();
     }),
-    fetch('Data/dated-brent.json').then(function (r) {
+    fetch('Data/dated-brent.json', { signal: controller.signal }).then(function (r) {
       if (!r.ok) throw new Error('dated-brent.json: HTTP ' + r.status);
       return r.json();
     })
   ])
   .then(function (data) {
+    clearTimeout(timeoutId);
     initApp(data[0], data[1]);
   })
   .catch(function (err) {
-    var ov = document.getElementById('app-loading');
-    if (ov) {
-      ov.style.display = 'flex';
-      ov.innerHTML = '<div style="text-align:center;padding:2rem"><p style="color:var(--neg);font-size:1.1rem;margin-bottom:.5rem">⚠ Error al cargar datos</p><p style="color:var(--text2);font-family:JetBrains Mono,monospace;font-size:.8rem">' + err.message + '</p></div>';
-    }
+    var msg = err.name === 'AbortError'
+      ? 'Tiempo de espera agotado. Por favor recargue la página.'
+      : 'Error al cargar datos. Por favor recargue la página.';
+    showError(msg, err.name !== 'AbortError' ? err.message : null);
     console.error('[BreantMonitor] Data load failed:', err);
   });
 })();

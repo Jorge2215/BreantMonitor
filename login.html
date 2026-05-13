@@ -2,10 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Brent Monitor</title>
   <meta http-equiv="refresh" content="0; url='/.auth/login/aad'" />
+  <style>
+    body { margin:0; background:#0a0e13; display:flex; align-items:center; justify-content:center; height:100vh; font-family:-apple-system,BlinkMacSystemFont,'Open Sans',sans-serif }
+    .msg { text-align:center; color:#e8eef5 }
+    .brand { font-size:1.4rem; font-weight:700; letter-spacing:.04em; margin-bottom:.5rem }
+    .tag { font-size:.7rem; color:#4dabf7; letter-spacing:.12em; text-transform:uppercase; margin-bottom:1.25rem }
+    .sub { font-size:.875rem; color:#9fb3c8 }
+    .dots::after { content:'.'; animation:ellipsis 1.4s steps(4,end) infinite }
+    @keyframes ellipsis { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+  </style>
 </head>
 <body>
-  <p>Redirigiendo al login de Entra ID...</p>
+  <div class="msg">
+    <div class="tag">Análisis de Futuros</div>
+    <div class="brand">Brent Monitor</div>
+    <div class="sub">Redirigiendo al login de Entra ID<span class="dots"></span></div>
+  </div>
 </body>
 </html>
