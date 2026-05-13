@@ -49,6 +49,7 @@ function subtractPeriod(base,p){const d=new Date(base+'T12:00:00Z');if(p==='1m')
 function findRowOnOrBefore(t){const h=ALL_DATES.filter(d=>d<=t);if(!h.length)return RAW[0];return RAW.find(r=>r.Date===h[h.length-1])}
 
 document.getElementById('last-date').textContent=LAST_DATE;
+document.getElementById('matrix-title').textContent='Spreads al '+LAST_DATE.split('-').reverse().join('/');
 const fromEl=document.getElementById('date-from'),toEl=document.getElementById('date-to');
 fromEl.min=FIRST_DATE;fromEl.max=LAST_DATE;fromEl.value=FIRST_DATE;
 toEl.min=FIRST_DATE;toEl.max=LAST_DATE;toEl.value=LAST_DATE;
@@ -210,6 +211,7 @@ function toggleTheme() {
   renderSpreadChart();
   buildForwardChart();
   if (typeof renderPctChart === 'function') renderPctChart();
+  if (dbChart) renderDbChart();
 }
 
 // ── AUTO-SELECT 1 MES ATRÁS ON LOAD ─────────────────────────────────────────
@@ -385,10 +387,11 @@ function renderPctChart() {
   pairs.forEach(function(p) {
     var key=p[0]+'_'+p[1], d=ROLL_DATA.percentiles[key]||{};
     var pct=d.pct||0;
+    var pctCls = pct <= 33 ? 'pos' : pct >= 67 ? 'neg' : 'warn';
     var card=document.createElement('div');
     card.className='pct-card';
     card.innerHTML='<div class="pct-pair-lbl">'+p[0]+'→'+p[1]+'</div>'+
-      '<div class="pct-num neg">'+Math.round(pct)+'° pct</div>'+
+      '<div class="pct-num '+pctCls+'">'+Math.round(pct)+'° pct</div>'+
       '<div class="pct-detail">Hoy: '+(d.today||0).toFixed(2)+'%</div>'+
       '<div class="pct-detail">Avg hist: '+(d.hist_avg||0).toFixed(2)+'%</div>'+
       '<div class="pct-bar-wrap"><div class="pct-bar-fill" style="width:100%"></div>'+
@@ -499,7 +502,7 @@ function renderDbChart(){
     labels.push(r.Date);
     series.push(dbSpreadValue(r, dbMode));
   });
-  const _c1 = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4dabf7';
+  const _c1 = getComputedStyle(document.documentElement).getPropertyValue('--curve1').trim() || '#4dabf7';
   const {gridC,tickC} = getChartColors();
   const ctx = document.getElementById('dbChart').getContext('2d');
   if(dbChart) dbChart.destroy();
@@ -636,17 +639,6 @@ window.onDbMx2CustomDate    = onDbMx2CustomDate;
 window.onMx2CustomDate      = onMx2CustomDate;
 window.renderHeatmap        = renderHeatmap;
 
-// Ensure dated chart rebuilds on theme toggle
-(function(){
-  const origToggle = window.toggleTheme;
-  if(typeof origToggle === 'function'){
-    window.toggleTheme = function(){
-
-      origToggle();
-      if(dbInitDone) renderDbChart();
-    };
-  }
-})();
 // Remove loading overlay once app is ready
 (function(){ var ov = document.getElementById('app-loading'); if(ov) ov.remove(); })();
 
