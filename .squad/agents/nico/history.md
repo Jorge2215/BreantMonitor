@@ -84,10 +84,22 @@
 5. **No keyboard navigation on matrix cells** — clickable `<td>` elements have no `tabindex` or `role="button"`. Accessibility gap.
 6. **Login page has no loading state / brand** — bare `<p>Redirigiendo…</p>` on white. If AAD redirect fails, user sees an unstyled blank page.
 
-### 2026-05-13 — Bug fixes from design review (5 fixes applied)
+### 2026-05-13 — Backlog fixes (4 items)
+
+- **ITEM 1 — Keyboard accessibility for matrix cells** (`Index.js`): Added `tabindex="0"` and `role="button"` to every clickable `<td>` in `renderMatrix()`. Added `onkeydown` inline handler that fires `onMatrixCellClick()` on Enter or Space, with `event.preventDefault()` to block page scroll on Space. No visual change.
+- **ITEM 2 — JSON fetch error handling with timeout** (`Index.js`): Added `AbortController` + 15-second `setTimeout` wrapping both `fetch()` calls in the bootstrap IIFE. `clearTimeout` called on both success and error paths. `showError()` helper renders user-friendly message using CSS tokens (`--neg`, `--text2`) — no hardcoded colours. Abort errors display "Tiempo de espera agotado"; HTTP/network errors display "Error al cargar datos. Por favor recargue la página." plus the technical detail.
+- **ITEM 3 — Branded login.html fallback** (`login.html`): Replaced bare `<p>` text with a branded splash screen. Inline `<style>` block: dark bg `#0a0e13` (resolved `--bg`), centred layout, "Análisis de Futuros" tag + "Brent Monitor" heading, animated ellipsis via pure CSS `@keyframes`. No JS, no external deps, 24 lines total.
+- **ITEM 4 — Mobile matrix layout below 700px** (`Index.css`): Added 5 rules inside the existing `@media (max-width:700px)` block. `.matrix-wrap table` → `font-size:.7rem`. `.matrix-wrap th/td` → `min-width:36px; padding:4px 2px`. First column (`td:first-child` / `th:first-child`) → `position:sticky; left:0; z-index:1/2` with explicit background (`--surface` / `--surface2`) to prevent bleed. Desktop layout unaffected.
+
 
 - **BUG 1 — dbChart theme toggle** (`Index.js`): Added `if (dbChart) renderDbChart();` directly inside `toggleTheme()` after the other chart rebuilds. Removed the redundant wrapper IIFE that had previously patched this via `window.toggleTheme` re-wrapping. Guard: `dbChart !== null`.
 - **BUG 2 — Percentile card color** (`Index.js`): Replaced hardcoded `neg` class on `.pct-num` with `var pctCls = pct <= 33 ? 'pos' : pct >= 67 ? 'neg' : 'warn'`. Low percentile = green (cheap), medium = amber, high = red (expensive).
 - **FIX 3 — KPI grid columns** (`Index.css`): Changed default `.kpi-row` from `repeat(7,1fr)` → `repeat(5,1fr)` (2 clean rows of 5). Updated `@media (max-width:1000px)` from 4 cols → 5 cols (no orphan). Updated `@media (max-width:700px)` from 3 cols → 2 cols. Added new `@media (max-width:400px)` for 1 col.
 - **FIX 4 — Dynamic matrix date** (`Index.html` + `Index.js`): Added `id="matrix-title"` to the spread matrix card title element. In JS, set its content to `'Spreads al ' + LAST_DATE.split('-').reverse().join('/')` (DD/MM/YYYY format) after data loads, same pattern as `last-date`.
 - **FIX 5 — dbChart color token** (`Index.js`): Changed `renderDbChart()` from `getPropertyValue('--accent')` → `getPropertyValue('--curve1')` for the primary line color. Aligns with the spread chart token convention.
+
+### 2026-05-13 — Backlog fixes implemented
+- **Agent:** nico-2
+- **Summary:** Implemented 4 backlog fixes: a11y keyboard nav in matrix (Index.js), JSON fetch timeout + error handling (Index.js), branded login.html fallback, mobile matrix sticky column (Index.css).
+- **Notes:** fixes are surgical; no behavioural changes beyond accessibility and error handling improvements.
+

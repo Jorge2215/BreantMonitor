@@ -422,3 +422,202 @@ Each row gets a unique `_id` assigned when loaded. This field is used for edit/d
 - `script.js` — untouched
 - `Data/*.json` — untouched; the editor only reads/writes them at user request via GitHub API
 
+
+
+---
+
+# Decision: CSS Extraction — Editor.css
+
+**Date:** 2026-05-10  
+**Author:** Foden (Frontend Dev)  
+**Files affected:** `editor.html`, `Editor.css` (new)
+
+## What Was Done
+
+Extracted the entire `<style>` block from `editor.html` (approximately lines 9–303) into a new external file `Editor.css` at the repo root.  
+`editor.html` previously contained one `<style>` block covering all editor-specific component styles (~294 lines of CSS).
+
+The block was removed and replaced with:
+```html
+<link rel="stylesheet" href="Editor.css">
+```
+placed immediately after the existing `<link rel="stylesheet" href="styles.css">` in `<head>`.
+
+## What Was Consolidated
+
+| Item | Decision |
+|---|---|
+| All editor-specific rules | Moved verbatim into `Editor.css` with the original section comments preserved. |
+| Header comment | Added a banner comment clarifying this file extends `styles.css` design tokens. |
+
+## Why
+
+- **Consistency:** Follows the pattern Nico established when extracting `styles.css` from `Index.html`.
+- **Maintainability:** CSS in a dedicated file is easier to navigate and review than an inline block.
+- **Cacheability:** External stylesheets are cached by browsers; inline styles are re-parsed on every load.
+- **Separation of concerns:** Keeps HTML focused on structure; CSS focused on presentation.
+- **Zero visual change:** All class names, selectors, custom property references, and `[data-theme]` overrides are byte-for-byte identical to the original.
+
+## Governance Note
+
+No JavaScript was modified. The page's runtime behaviour (GitHub API calls, table rendering, pagination) is unaffected.
+
+
+
+---
+
+# Decision: Frontend Backlog Fixes — 2026-05-13
+
+**Date:** 2026-05-13T12:09:57.292-03:00
+**Author:** Nico (Frontend Dev)
+**Files affected:** `Index.js`, `Index.css`, `login.html`
+
+---
+
+## Fix 1 — Keyboard accessibility for matrix cells
+
+**File:** `Index.js`
+
+`renderMatrix()` now emits `tabindex="0"` and `role="button"` on every clickable `<td>`. An `onkeydown` handler triggers `onMatrixCellClick()` when the user presses `Enter` or `Space` (`event.preventDefault()` blocks page scroll on Space). Existing mouse click behaviour is unchanged.
+
+**Rationale:** Clickable table cells were entirely inaccessible to keyboard-only and screen-reader users. `role="button"` communicates intent to AT; `tabindex="0"` makes cells reachable via Tab.
+
+---
+
+## Fix 2 — JSON fetch error handling with 15-second timeout
+
+**File:** `Index.js`
+
+Bootstrap IIFE now creates an `AbortController` and a 15-second `setTimeout` before the `Promise.all`. Both fetch calls pass `{ signal: controller.signal }`. `clearTimeout` is called on both the success and error paths. A `showError()` helper renders the error state into the existing `#app-loading` overlay using CSS custom properties (`var(--neg)`, `var(--text2)`) — no hardcoded colours. Abort errors show "Tiempo de espera agotado"; HTTP/network errors show "Error al cargar datos. Por favor recargue la página."
+
+**Rationale:** Without a timeout, a hung network request left users staring at an infinite spinner with no feedback. The happy-path data flow is untouched.
+
+---
+
+## Fix 3 — Branded login.html fallback
+
+**File:** `login.html`
+
+Replaced the bare `<p>Redirigiendo…</p>` body with a 24-line branded splash screen. A `<style>` block applies: dark background `#0a0e13` (the resolved value of `--bg`), flexbox-centred layout, "Análisis de Futuros" label, "Brent Monitor" heading, and a pure-CSS animated-ellipsis loading indicator. No JavaScript. No external dependencies.
+
+**Rationale:** The previous login.html rendered as an unstyled white page during the Azure Entra ID redirect. On slow or failed redirects users saw a broken-looking blank page. The new splash is visually consistent with the main app.
+
+---
+
+## Fix 4 — Mobile matrix layout below 700px
+
+**File:** `Index.css`
+
+Five rules added inside the existing `@media (max-width:700px)` block:
+
+| Selector | Rule |
+|---|---|
+| `.matrix-wrap table` | `font-size:.7rem` |
+| `.matrix-wrap th, .matrix-wrap td` | `min-width:36px; padding:4px 2px` |
+| `.matrix-wrap td:first-child` | `position:sticky; left:0; z-index:1; background:var(--surface)` |
+| `.matrix-wrap th:first-child` | `position:sticky; left:0; z-index:2; background:var(--surface2)` |
+
+**Rationale:** The 10×10 spread matrix caused severe horizontal scroll on phones (≤375 px wide). Column labels scrolled off-screen, making the matrix unreadable. Compact padding + sticky first column resolves both issues without touching the matrix HTML or desktop layout.
+
+
+
+---
+
+# Decision: Frontend Bug Fixes — Design Review 2026-05-13
+
+**Date:** 2026-05-13  
+**Author:** Nico (Frontend Dev)  
+**Files affected:** `Index.js`, `Index.css`, `Index.html`
+
+## Summary
+
+Applied all 5 confirmed bugs/inconsistencies identified in the design review. All fixes are surgical — only the described lines were changed.
+
+---
+
+## Fix 1 — dbChart not rebuilt on theme toggle (🔴)
+
+**File:** `Index.js`  
+**Change:** Added `if (dbChart) renderDbChart();` directly inside `toggleTheme()`, after the existing `renderSpreadChart()`, `buildForwardChart()`, and `renderPctChart()` calls. Removed the redundant wrapper IIFE at the bottom of `initApp` that had previously patched this via `window.toggleTheme` wrapping (it was functional but convoluted).  
+**Guard used:** `if (dbChart)` — checks the chart instance directly, matching the variable-null pattern described in the spec.
+
+---
+
+## Fix 2 — Percentile cards always show red (🔴)
+
+**File:** `Index.js`  
+**Change:** Replaced the hardcoded `neg` class on `.pct-num` with a computed variable:
+```js
+var pctCls = pct <= 33 ? 'pos' : pct >= 67 ? 'neg' : 'warn';
+```
+- ≤ 33rd percentile → `pos` (green) — roll is cheap/favorable  
+- 34–66 → `warn` (amber) — roll is average  
+- ≥ 67th percentile → `neg` (red) — roll is expensive/unfavorable
+
+---
+
+## Fix 3 — KPI grid orphaned layout (🟡)
+
+**File:** `Index.css`  
+**Changes:**
+1. Default `.kpi-row`: `repeat(7,1fr)` → `repeat(5,1fr)` — produces two clean rows of 5 for 10 cards.
+2. `@media (max-width:1000px)`: `.kpi-row` changed from `repeat(4,1fr)` to `repeat(5,1fr)` — eliminates the 4+4+2 orphan at this breakpoint.
+3. `@media (max-width:700px)`: `.kpi-row` changed from `repeat(3,1fr)` to `repeat(2,1fr)` — 5 clean rows of 2 on mobile.
+4. Added `@media (max-width:400px)`: `.kpi-row { grid-template-columns:repeat(1,1fr) }` — single column on very small screens.
+
+---
+
+## Fix 4 — Hardcoded matrix date (🟡)
+
+**Files:** `Index.html`, `Index.js`  
+**Changes:**
+1. `Index.html` line 92: Added `id="matrix-title"` to `<div class="card-title">Spreads al 05/05/2026</div>`.
+2. `Index.js` (after `LAST_DATE` is set): Added `document.getElementById('matrix-title').textContent = 'Spreads al ' + LAST_DATE.split('-').reverse().join('/');` — formats LAST_DATE from `YYYY-MM-DD` to `DD/MM/YYYY`, matching the hardcoded style.
+
+---
+
+## Fix 5 — dbChart color token inconsistency (🟡)
+
+**File:** `Index.js`  
+**Change:** In `renderDbChart()`, changed color token from `--accent` to `--curve1`:
+```js
+// Before
+const _c1 = getComputedStyle(...).getPropertyValue('--accent').trim() || '#4dabf7';
+// After
+const _c1 = getComputedStyle(...).getPropertyValue('--curve1').trim() || '#4dabf7';
+```
+Both tokens currently resolve to the same value (`#4dabf7` in dark mode), but `--curve1` is the canonical token for primary chart lines, matching the spread chart pattern.
+
+
+
+---
+
+# Decision: Editor Page CSS Fix — 2026-05-10
+
+**Author:** Nico (Frontend Dev)  
+**Date:** 2026-05-10  
+**Commit:** 66edcc4
+
+## Root Cause
+
+When Foden externalized the editor's `<style>` block into `Editor.css`, another refactor was already in progress (or recently done) that renamed `styles.css` → `Index.css` and `script.js` → `Index.js` for naming consistency with `Index.html`. Those renames were present on disk but **never committed**.
+
+`editor.html` linked to `styles.css` — which no longer existed on disk — causing the entire editor page to render unstyled (white page). `Editor.css` references CSS custom properties (`--surface`, `--accent`, `--border`, etc.) that are defined in the shared base stylesheet. Without that base stylesheet loading, all tokens were `undefined` and the layout collapsed.
+
+## What Was Fixed
+
+1. `editor.html` `<link>`: `styles.css` → `Index.css`  
+2. Committed the previously unstaged renames:
+   - `styles.css` → `Index.css` (100% identical content)
+   - `script.js` → `Index.js` (100% identical content)
+   - `Index.html` updated references (already modified, unstaged)
+
+## Rule Going Forward
+
+**When renaming a shared CSS or JS file, search ALL HTML files in the repo for references before committing.** A single missed reference causes a silent white-page failure on Azure Static Web Apps (which is case-sensitive and serves missing files as 404 with no fallback).
+
+Suggested check before any shared file rename:
+```powershell
+Select-String -Path "*.html" -Pattern "styles.css"
+```
+
